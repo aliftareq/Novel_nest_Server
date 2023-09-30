@@ -10,6 +10,7 @@ app.use(cors());
 app.use(express.json());
 
 const uri = `mongodb+srv://${process.env.DB_USER}:${process.env.DB_PASS}@cluster0.preca8g.mongodb.net/?retryWrites=true&w=majority`
+
 const client = new MongoClient(uri, {
   useNewUrlParser: true,
   useUnifiedTopology: true,
@@ -18,33 +19,48 @@ const client = new MongoClient(uri, {
 
 const run = async () => {
   try {
-    const db = client.db('tech-net');
-    const productCollection = db.collection('product');
+    const db = client.db('Novel_Nest');
+    const booksCollection = db.collection('Books');
+    const userCollection = db.collection('users');
 
-    app.get('/products', async (req, res) => {
-      const cursor = productCollection.find({});
-      const product = await cursor.toArray();
+    app.get('/books', async (req, res) => {
 
-      res.send({ status: true, data: product });
+      const searchTerm = req.query.searchTerm;
+
+      if (searchTerm) {
+        const books = await booksCollection.find({
+          $or: [
+            { Genre: { $regex: searchTerm, $options: 'i' } },
+            { Title: { $regex: searchTerm, $options: 'i' } },
+            { Author: { $regex: searchTerm, $options: 'i' } },
+          ],
+        }).toArray();
+        res.send({ status: true, count: books.length, data: books });
+      }
+      else {
+        const cursor = booksCollection.find({});
+        const books = await cursor.toArray();
+        res.send({ status: true, count: books.length, data: books });
+      }
     });
 
-    app.post('/product', async (req, res) => {
-      const product = req.body;
+    app.post('/book', async (req, res) => {
+      const book = req.body;
 
-      const result = await productCollection.insertOne(product);
+      const result = await booksCollection.insertOne(book);
 
       res.send(result);
     });
 
-    app.get('/product/:id', async (req, res) => {
+    app.get('/book/:id', async (req, res) => {
       const id = req.params.id;
 
-      const result = await productCollection.findOne({ _id: ObjectId(id) });
+      const result = await booksCollection.findOne({ _id: ObjectId(id) });
       console.log(result);
       res.send(result);
     });
 
-    app.delete('/product/:id', async (req, res) => {
+    app.delete('/book/:id', async (req, res) => {
       const id = req.params.id;
 
       const result = await productCollection.deleteOne({ _id: ObjectId(id) });
@@ -52,42 +68,42 @@ const run = async () => {
       res.send(result);
     });
 
-    app.post('/comment/:id', async (req, res) => {
-      const productId = req.params.id;
-      const comment = req.body.comment;
+    app.post('/Reviews/:id', async (req, res) => {
+      const bookId = req.params.id;
+      const Review = req.body;
 
-      console.log(productId);
-      console.log(comment);
+      console.log(bookId);
+      console.log(Review);
 
-      const result = await productCollection.updateOne(
-        { _id: ObjectId(productId) },
-        { $push: { comments: comment } }
+      const result = await booksCollection.updateOne(
+        { _id: ObjectId(bookId) },
+        { $push: { Reviews: Review } }
       );
 
       console.log(result);
 
       if (result.modifiedCount !== 1) {
-        console.error('Product not found or comment not added');
-        res.json({ error: 'Product not found or comment not added' });
+        console.error('Book not found or comment not added');
+        res.json({ error: 'Book not found or comment not added' });
         return;
       }
 
-      console.log('Comment added successfully');
-      res.json({ message: 'Comment added successfully' });
+      console.log('Reviews added successfully');
+      res.json({ message: 'Reviews added successfully' });
     });
 
-    app.get('/comment/:id', async (req, res) => {
+    app.get('/Reviews/:id', async (req, res) => {
       const productId = req.params.id;
 
-      const result = await productCollection.findOne(
+      const result = await booksCollection.findOne(
         { _id: ObjectId(productId) },
-        { projection: { _id: 0, comments: 1 } }
+        { projection: { _id: 0, Reviews: 1 } }
       );
 
       if (result) {
         res.json(result);
       } else {
-        res.status(404).json({ error: 'Product not found' });
+        res.status(404).json({ error: 'book not found' });
       }
     });
 
@@ -117,9 +133,9 @@ const run = async () => {
 run().catch((err) => console.log(err));
 
 app.get('/', (req, res) => {
-  res.send('Hello World!');
+  res.send('Novel_Nest server is Activated!');
 });
 
 app.listen(port, () => {
-  console.log(`Example app listening on port ${port}`);
+  console.log(`Novel_Nest server listening on port ${port}`);
 });
