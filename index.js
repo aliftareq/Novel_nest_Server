@@ -46,8 +46,10 @@ const run = async () => {
 
     app.post('/book', async (req, res) => {
       const book = req.body;
+      console.log(req.body);
 
       const result = await booksCollection.insertOne(book);
+      console.log(result);
 
       res.send(result);
     });
@@ -60,11 +62,25 @@ const run = async () => {
       res.send(result);
     });
 
+    app.patch('/book/:id', async (req, res) => {
+      const id = req.params.id;
+      const updatedData = req.body;
+      const result = await booksCollection.findOneAndUpdate(
+        { _id: ObjectId(id) },
+        { $set: updatedData },
+      );
+
+      if (result.value) {
+        res.status(200).json(result);
+      } else {
+        res.status(404).json({ error: 'Book not found' });
+      }
+    });
+
     app.delete('/book/:id', async (req, res) => {
       const id = req.params.id;
 
-      const result = await productCollection.deleteOne({ _id: ObjectId(id) });
-      console.log(result);
+      const result = await booksCollection.deleteOne({ _id: ObjectId(id) });
       res.send(result);
     });
 
@@ -138,4 +154,4 @@ app.get('/', (req, res) => {
 
 app.listen(port, () => {
   console.log(`Novel_Nest server listening on port ${port}`);
-});
+});   
