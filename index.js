@@ -58,7 +58,6 @@ const run = async () => {
       const id = req.params.id;
 
       const result = await booksCollection.findOne({ _id: ObjectId(id) });
-      console.log(result);
       res.send(result);
     });
 
@@ -79,7 +78,6 @@ const run = async () => {
 
     app.delete('/book/:id', async (req, res) => {
       const id = req.params.id;
-
       const result = await booksCollection.deleteOne({ _id: ObjectId(id) });
       res.send(result);
     });
@@ -125,10 +123,14 @@ const run = async () => {
 
     app.post('/user', async (req, res) => {
       const user = req.body;
+      console.log(user);
 
-      const result = await userCollection.insertOne(user);
+      const isExistUser = await userCollection.findOne(user);
+      if (!isExistUser) {
+        const result = await userCollection.insertOne(user);
+        res.send(result);
+      }
 
-      res.send(result);
     });
 
     app.get('/user/:email', async (req, res) => {
